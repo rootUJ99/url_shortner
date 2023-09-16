@@ -8,18 +8,35 @@ services:
     ports:
       - 6969:6969
 
-  db:
-    container_name: prostgres_db 
-    image: postgres
-    restart: always
-    hostname: prostgres_db
-    env_file:
-      - .env
+  redis:
+    image: redis:latest
+    command: redis-server
+    volumes:
+      - redis:/var/lib/redis
+      - redis-config:/usr/local/etc/redis/redis.conf
     ports:
-      - "5432:5432"
+      - 6379:6379
+    networks:
+      - redis-network
 
-  adminer:
-    image: adminer
+  redis-commander:
+    container_name: redis-commander
+    hostname: redis-commander
+    image: rediscommander/redis-commander:latest
     restart: always
+    environment:
+    - REDIS_HOSTS=local:redis:6379
     ports:
-      - 8080:8080
+    - "8081:8081"
+    networks:
+      - redis-network
+    depends_on:
+      - redis
+
+volumes:
+  redis:
+  redis-config:
+
+networks:
+  redis-network:
+    driver: bridge
