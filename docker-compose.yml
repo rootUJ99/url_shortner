@@ -7,6 +7,8 @@ services:
       target: final
     ports:
       - 6969:6969
+    networks:
+        - redis-network 
 
   redis:
     image: redis:latest

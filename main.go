@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
+	"context"
 	"github.com/gorilla/mux"
+	"github.com/redis/go-redis/v9"
 )
 
 type TinyHandlerBody struct  {
@@ -78,6 +79,23 @@ func (tCtx TinyCtx) tinyHandler(w http.ResponseWriter, r *http.Request) {
 func main(){
 	fmt.Println("Hello form go")
 	r:= mux.NewRouter()	
+	client := redis.NewClient(&redis.Options{
+        Addr:	  "redis:6379",
+        Password: "", // no password set
+        DB:		  0,  // use default DB
+    })
+	ctx := context.Background()
+
+	err := client.Set(ctx, "foo", "bar", 0).Err()
+	if err != nil {
+	    panic(err)
+	}
+
+	val, err := client.Get(ctx, "foo").Result()
+	if err != nil {
+	    panic(err)
+	}
+	fmt.Println("foo", val)
 	tCtx :=TinyCtx{
 		urls: make(map[string]string),
 	}
