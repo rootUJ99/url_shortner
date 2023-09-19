@@ -19,7 +19,8 @@ type TinyHandlerBody struct  {
 
 type TinyCtx struct {
 	urls map[string]string
-
+	client *redis.Client
+	ctx context.Context 
 }
 
 
@@ -53,8 +54,13 @@ func (tCtx TinyCtx) rootRedirector(w http.ResponseWriter, r *http.Request) {
 		log.Panic("url does not exist")
 		return
 	}
+	redisHash ,err := tCtx.client.Get(tCtx.ctx, hash).Result()
+	if err != nil {
+	    panic(err)
+	}
+
 	fmt.Println(urlHash)
-	http.Redirect(w, r, urlHash,301)
+	http.Redirect(w, r, redisHash,301)
 		// testJson:= test {Name:"holla", Age:27}
 		//w.Write(testJson)
 		/* json.NewEncoder(w).Encode(testJson) */
@@ -72,6 +78,10 @@ func (tCtx TinyCtx) tinyHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("hash", hash)
 	// Append(tinyList, hash) 
 	tCtx.urls[hash] = body.Url 
+	err := tCtx.client.Set(tCtx.ctx, hash, body.Url, 0).Err()
+	if err != nil {
+	    panic(err)
+	}
 	fmt.Println(tCtx.urls)
 	sendAsJson(w, body)
 }
@@ -80,6 +90,7 @@ func main(){
 	fmt.Println("Hello form go")
 	r:= mux.NewRouter()	
 	client := redis.NewClient(&redis.Options{
+
         Addr:	  "redis:6379",
         Password: "", // no password set
         DB:		  0,  // use default DB
@@ -98,6 +109,8 @@ func main(){
 	fmt.Println("foo", val)
 	tCtx :=TinyCtx{
 		urls: make(map[string]string),
+		client: client,
+		ctx: ctx,
 	}
 	r.HandleFunc("/{hash}",tCtx.rootRedirector).Methods("GET")
 
