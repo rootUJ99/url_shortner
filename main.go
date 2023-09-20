@@ -1,5 +1,4 @@
 package main
-
 import (
 	"crypto/sha256"
 	"encoding/json"
@@ -86,6 +85,19 @@ func (tCtx TinyCtx) tinyHandler(w http.ResponseWriter, r *http.Request) {
 	sendAsJson(w, body)
 }
 
+func (tCtx TinyCtx) tinyGetHandler(w http.ResponseWriter, r *http.Request) {
+	resultList, err :=tCtx.client.Keys(tCtx.ctx, "*").Result()
+	if err != nil {
+		panic(err)
+	}
+	// for _, key:= range {
+	// 		
+	// }
+	fmt.Println(resultList)
+	w.Write([]byte("hello"))
+}
+
+
 func main(){
 	fmt.Println("Hello form go")
 	r:= mux.NewRouter()	
@@ -115,6 +127,8 @@ func main(){
 	r.HandleFunc("/{hash}",tCtx.rootRedirector).Methods("GET")
 
 	r.HandleFunc("/api/v1/tiny", tCtx.tinyHandler).Methods("POST")
+
+	r.HandleFunc("/api/v1/tiny", tCtx.tinyGetHandler).Methods("GET")
 
 	http.ListenAndServe(":6969",r)
 }
