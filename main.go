@@ -81,6 +81,11 @@ func (tCtx TinyCtx) tinyPostHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 	    panic(err)
 	}
+	err = tCtx.client.HSet(tCtx.ctx, "tiny", hash, body.Url, 0).Err()
+	if err != nil {
+	    panic(err)
+	}
+
 	fmt.Println(tCtx.urls)
 	sendAsJson(w, body)
 }
