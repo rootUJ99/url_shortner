@@ -8,6 +8,8 @@ services:
       target: dev 
     ports:
       - 6969:6969
+    volumes:
+      - ./:/src
     depends_on: 
       - redis
     networks:

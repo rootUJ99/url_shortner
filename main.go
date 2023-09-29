@@ -121,7 +121,7 @@ func (tCtx TinyCtx) tinyDelHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func main(){
-	fmt.Println("Hello form go lang")
+	fmt.Println("Hello form golang")
 	r:= mux.NewRouter()	
 	client := redis.NewClient(&redis.Options{
 
