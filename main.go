@@ -15,6 +15,10 @@ type TinyHandlerBody struct  {
 	Expiry int `json:"expiry"`
 }
 
+type TinyGetAllResponse struct {
+	Result map[string]string `json:"result"`
+} 
+
 
 type TinyCtx struct {
 	urls map[string]string
@@ -81,7 +85,7 @@ func (tCtx TinyCtx) tinyPostHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 	    panic(err)
 	}
-	err = tCtx.client.HSet(tCtx.ctx, "tiny", hash, body.Url, 0).Err()
+	err = tCtx.client.HSet(tCtx.ctx, "tiny", hash, body.Url).Err()
 	if err != nil {
 	    panic(err)
 	}
@@ -91,15 +95,16 @@ func (tCtx TinyCtx) tinyPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (tCtx TinyCtx) tinyGetHandler(w http.ResponseWriter, r *http.Request) {
-	resultList, err :=tCtx.client.Keys(tCtx.ctx, "*").Result()
+	resultList, err := tCtx.client.HGetAll(tCtx.ctx, "tiny").Result()
 	if err != nil {
 		panic(err)
 	}
-	// for _, key:= range {
-	// 		
-	// }
+	
 	fmt.Println(resultList)
-	w.Write([]byte("hello"))
+	response:=TinyGetAllResponse {
+		resultList,
+	}
+	sendAsJson(w, response)
 }
 
 func (tCtx TinyCtx) tinyDelHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +121,7 @@ func (tCtx TinyCtx) tinyDelHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func main(){
-	fmt.Println("Hello form go")
+	fmt.Println("Hello form go lang")
 	r:= mux.NewRouter()	
 	client := redis.NewClient(&redis.Options{
 
