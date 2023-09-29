@@ -2,10 +2,10 @@ version: '3.1'
 
 services:
   server:
-    container_name: url-shortner-dev
+    container_name: url-shortner-prod
     build:
       context: .
-      target: dev 
+      target: prod 
     ports:
       - 6969:6969
     depends_on: 
@@ -45,4 +45,5 @@ volumes:
 networks:
   redis-network:
     driver: bridge
+
 

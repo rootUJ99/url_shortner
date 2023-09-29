@@ -3,8 +3,24 @@
 # Comments are provided throughout this file to help you get started.
 # If you need more help, visit the Dockerfile reference guide at
 # https://docs.docker.com/engine/reference/builder/
+# Creating a dev version with watch
+
+ARG GO_VERSION=1.21
+FROM golang:${GO_VERSION} AS dev 
+WORKDIR /src
+
+
+# adding go package for watch 
+RUN go install github.com/cosmtrek/air@latest
+
+COPY . /src
+
+RUN go mod download
+
+CMD air
 
 ################################################################################
+
 # Create a stage for building the application.
 ARG GO_VERSION=1.21
 FROM golang:${GO_VERSION} AS build
@@ -27,6 +43,10 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
     CGO_ENABLED=0 go build -o /bin/server .
 
+
+CMD go version
+
+
 ################################################################################
 # Create a new stage for running the application that contains the minimal
 # runtime dependencies for the application. This often uses a different base
@@ -38,7 +58,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 # most recent version of that image when you build your Dockerfile. If
 # reproducability is important, consider using a versioned tag
 # (e.g., alpine:3.17.2) or SHA (e.g., alpine:sha256:c41ab5c992deb4fe7e5da09f67a8804a46bd0592bfdf0b1847dde0e0889d2bff).
-FROM alpine:latest AS final
+FROM alpine:latest AS prod 
 
 # Install any runtime dependencies that are needed to run your application.
 # Leverage a cache mount to /var/cache/apk/ to speed up subsequent builds.
