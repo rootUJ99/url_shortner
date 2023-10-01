@@ -27,7 +27,6 @@ type TinyGetAllResponse struct {
 
 
 type TinyCtx struct {
-	urls map[string]string
 	client *redis.Client
 	ctx context.Context 
 }
@@ -83,7 +82,6 @@ func (tCtx TinyCtx) tinyPostHandler(w http.ResponseWriter, r *http.Request) {
 	var body TinyHandlerPostBody 
 	json.NewDecoder(r.Body).Decode(&body)
 	hash:=calculateHash(body.Url)
-	tCtx.urls[hash] = body.Url 
 	
 	err := tCtx.client.HSet(tCtx.ctx, "urlHash", hash, body.Url).Err()
 	if err != nil {
@@ -104,7 +102,6 @@ func (tCtx TinyCtx) tinyPutHandler(w http.ResponseWriter, r *http.Request) {
 	var body TinyHandlerUpdateBody 
 	json.NewDecoder(r.Body).Decode(&body)
 	hash:=calculateHash(body.Url)
-	tCtx.urls[hash] = body.Url 
 	
 	err := tCtx.client.HSet(tCtx.ctx, "urlHash", hash, body.Url).Err()
 	if err != nil {
@@ -210,7 +207,6 @@ func main(){
 	}
 	fmt.Println("foo", val)
 	tCtx :=TinyCtx{
-		urls: make(map[string]string),
 		client: client,
 		ctx: ctx,
 	}
