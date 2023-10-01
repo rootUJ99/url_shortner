@@ -45,6 +45,9 @@ func parseBody(r *http.Request, body any) {
 	}
 }
 
+func redisErr (err error) {
+	log.Panic("Error while doing operation with redis", err)
+}
 
 func (tCtx TinyCtx) rootRedirector(w http.ResponseWriter, r *http.Request) {
 	hash:=mux.Vars(r)["hash"]
@@ -59,35 +62,25 @@ func (tCtx TinyCtx) rootRedirector(w http.ResponseWriter, r *http.Request) {
 	}
 	redisHash ,err := tCtx.client.Get(tCtx.ctx, hash).Result()
 	if err != nil {
-	    panic(err)
+		redisErr(err)
+		return
 	}
 
 	fmt.Println(urlHash)
 	http.Redirect(w, r, redisHash,301)
-		// testJson:= test {Name:"holla", Age:27}
-		//w.Write(testJson)
-		/* json.NewEncoder(w).Encode(testJson) */
-		// sendAsJson(w, testJson)
-
 	w.Write([]byte("holla"))
 }
 
 
 func (tCtx TinyCtx) tinyPostHandler(w http.ResponseWriter, r *http.Request) {
 	var body TinyHandlerBody
-	//parseBody(r, &body)
 	json.NewDecoder(r.Body).Decode(&body)
 	hash:=calculateHash(body.Url)
-	fmt.Println("hash", hash)
-	// Append(tinyList, hash) 
 	tCtx.urls[hash] = body.Url 
-	err := tCtx.client.Set(tCtx.ctx, hash, body.Url, 0).Err()
+
+	err := tCtx.client.HSet(tCtx.ctx, "urlHash", body.Url, hash).Err()
 	if err != nil {
-	    panic(err)
-	}
-	err = tCtx.client.HSet(tCtx.ctx, "tiny", hash, body.Url).Err()
-	if err != nil {
-	    panic(err)
+		redisErr(err)
 	}
 
 	fmt.Println(tCtx.urls)
@@ -95,12 +88,33 @@ func (tCtx TinyCtx) tinyPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (tCtx TinyCtx) tinyGetHandler(w http.ResponseWriter, r *http.Request) {
-	resultList, err := tCtx.client.HGetAll(tCtx.ctx, "tiny").Result()
+	url:=r.URL.Query().Get("url")
+	resultHash, err := tCtx.client.HGet(tCtx.ctx, "urlHash", url).Result()
 	if err != nil {
-		panic(err)
+		redisErr(err)
+		return
 	}
+
+	fmt.Println(url, resultHash, "here we go is there any space")
 	
+	type res struct {
+		Result map[string]string `json:"result"`
+	}
+	response:=res {
+		map[string]string{url:resultHash },
+	}
+	sendAsJson(w, response)
+}
+
+func (tCtx TinyCtx) tinyGetAllHandler(w http.ResponseWriter, r *http.Request) {
+	resultList, err := tCtx.client.HGetAll(tCtx.ctx, "urlHash").Result()
+	if err != nil {
+		redisErr(err)
+		return
+	}
+
 	fmt.Println(resultList)
+	
 	response:=TinyGetAllResponse {
 		resultList,
 	}
@@ -108,15 +122,20 @@ func (tCtx TinyCtx) tinyGetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (tCtx TinyCtx) tinyDelHandler(w http.ResponseWriter, r *http.Request) {
-	resultList, err :=tCtx.client.Keys(tCtx.ctx, "*").Result()
+	url:=r.URL.Query().Get("url")
+	err :=tCtx.client.HDel(tCtx.ctx, "urlHash", url).Err()
 	if err != nil {
-		panic(err)
+		redisErr(err)
+		return
 	}
-	// for _, key:= range {
-	// 		
-	// }
-	fmt.Println(resultList)
-	w.Write([]byte("hello"))
+	fmt.Println(url)
+	type res struct {
+		Message string `json:"message"`
+	}
+	response:=res {
+		Message: fmt.Sprintf("%v has been deleted from the record", url),
+	}
+	sendAsJson(w, response)
 }
 
 
@@ -148,9 +167,11 @@ func main(){
 	}
 	r.HandleFunc("/{hash}",tCtx.rootRedirector).Methods("GET")
 
-	r.HandleFunc("/api/v1/tiny", tCtx.tinyPostHandler).Methods("POST")
+	r.HandleFunc("/api/v1/tiny", tCtx.tinyPostHandler).Methods("POST", "PUT")
 
 	r.HandleFunc("/api/v1/tiny", tCtx.tinyGetHandler).Methods("GET")
+
+	r.HandleFunc("/api/v1/tiny/all", tCtx.tinyGetAllHandler).Methods("GET")
 
 	r.HandleFunc("/api/v1/tiny", tCtx.tinyDelHandler).Methods("DELETE")
 
