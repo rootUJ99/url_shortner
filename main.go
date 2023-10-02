@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
+	"github.com/rootuj99/url_shortner/cmd/cli"
 )
 
 type TinyHandlerPostBody struct  {
@@ -186,7 +187,7 @@ func (tCtx TinyCtx) tinyDelHandlerByHash(w http.ResponseWriter, r *http.Request)
 
 
 func main(){
-	fmt.Println("Hello form golang")
+	fmt.Println("welcome to the tiny app")
 	r:= mux.NewRouter()	
 	client := redis.NewClient(&redis.Options{
 
@@ -196,16 +197,6 @@ func main(){
     })
 	ctx := context.Background()
 
-	err := client.Set(ctx, "foo", "bar", 0).Err()
-	if err != nil {
-	    panic(err)
-	}
-
-	val, err := client.Get(ctx, "foo").Result()
-	if err != nil {
-	    panic(err)
-	}
-	fmt.Println("foo", val)
 	tCtx :=TinyCtx{
 		client: client,
 		ctx: ctx,
@@ -218,9 +209,10 @@ func main(){
 
 	r.HandleFunc("/api/v1/tiny", tCtx.tinyGetHandler).Methods("GET")
 
-	r.HandleFunc("/api/v1/tiny/all", tCtx.tinyGetAllHandler).Methods("GET")
+	r.HandleFunc("/api/v2/tiny/all", tCtx.tinyGetAllHandler).Methods("GET")
 
 	r.HandleFunc("/api/v1/tiny", tCtx.tinyDelHandlerByHash).Methods("DELETE")
-
+	
+	cli.CliApp();
 	http.ListenAndServe(":6969",r)
 }
