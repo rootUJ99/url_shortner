@@ -8,7 +8,7 @@ import (
 	"context"
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
-	"github.com/rootuj99/url_shortner/cmd/cli"
+	/* "github.com/rootuj99/url_shortner/cmd/cli" */
 )
 
 type TinyHandlerPostBody struct  {
@@ -187,7 +187,7 @@ func (tCtx TinyCtx) tinyDelHandlerByHash(w http.ResponseWriter, r *http.Request)
 
 
 func main(){
-	fmt.Println("welcome to the tiny app")
+	fmt.Println("welcome to the tiny app!")
 	r:= mux.NewRouter()	
 	client := redis.NewClient(&redis.Options{
 
@@ -213,6 +213,6 @@ func main(){
 
 	r.HandleFunc("/api/v1/tiny", tCtx.tinyDelHandlerByHash).Methods("DELETE")
 	
-	cli.CliApp();
+/* 	cli.CliApp(); */
 	http.ListenAndServe(":6969",r)
 }

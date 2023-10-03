@@ -1,4 +1,4 @@
-package cli
+package main 
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ func callApi(url string) ResResult {
     return resObj
 }
 
-func CliApp() {
+func cliApp() {
     app:= &pkcli.App{
 	Name: "tiny",
 	Usage: "make tiny urls with just a click",
@@ -77,4 +77,9 @@ func CliApp() {
     if err := app.Run(os.Args); err != nil {
 	log.Fatal(err)
     }
+}
+
+func main(){
+    cliApp()
+    fmt.Println("this is tiny from cmd!")
 }
