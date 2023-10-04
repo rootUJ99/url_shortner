@@ -11,13 +11,13 @@ WORKDIR /src
 
 
 # adding go package for watch 
-RUN go install github.com/cosmtrek/air@latest
+RUN go install github.com/bokwoon95/wgo@latest
 
 COPY . /src
 
 RUN go mod download
 
-CMD air
+CMD make 
 
 ################################################################################
 

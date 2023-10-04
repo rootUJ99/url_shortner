@@ -29,7 +29,7 @@ func callApi(url string) ResResult {
     return resObj
 }
 
-func cliApp() {
+func CliApp() {
     app:= &pkcli.App{
 	Name: "tiny",
 	Usage: "make tiny urls with just a click",
@@ -80,6 +80,5 @@ func cliApp() {
 }
 
 func main(){
-    cliApp()
-    fmt.Println("this is tiny from cmd!")
+    CliApp()
 }
