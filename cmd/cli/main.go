@@ -1,6 +1,7 @@
-package main 
+package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,18 +16,37 @@ type ResResult struct {
     Result map[string]string `json:"result"`
 }
 
-func callApi(url string) ResResult {
-    res, err := http.Get(url) 
+// type ApiModel struct {
+//     url string
+//     method string
+//     body map[]
+// }
+
+// type httpMethods interface {
+//     http.MethodPost | http.MethodGet
+// }
+
+func callApi[K comparable, V any](method string, url string, body map[K]V)  {
+    jBody, err := json.Marshal(body)
+    req, err := http.NewRequest(method, url, bytes.NewBuffer(jBody)) 
     if err != nil {
-	log.Panic("something went wrong!")
+	log.Panic("Failed to get response")
     } 
-    body, err :=io.ReadAll(res.Body)
-    if err != nil {
-	log.Panic("something is wrong with body")
-    }
-    var resObj ResResult
-    json.Unmarshal(body, &resObj)
-    return resObj
+    client := &http.Client{}
+    resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Errored when sending request to the server")
+	}
+
+    defer resp.Body.Close()
+    print(resp.Body)
+    // body, err =io.ReadAll(resp.Body)
+ //    if err != nil {
+	// log.Panic("can not able to parse body")
+ //    }
+ //    var resObj ResResult
+ //    json.Unmarshal(body, &resObj)
+ //    return resObj
 }
 
 func CliApp() {
@@ -62,7 +82,8 @@ func CliApp() {
 		Usage: "list all tiny urls",
 		Action: func(ctx *pkcli.Context) error {
 		    fmt.Printf("these are the list of urls\n\n")
-		    res:=callApi("http://localhost:6969/api/v2/tiny/all")
+		    var body map[string]string
+		    res:=callApi("GET", "http://localhost:6969/api/v2/tiny/all", body)
 		    w := tabwriter.NewWriter(os.Stdout, 10, 1, 1, ' ', tabwriter.Debug)
 		    fmt.Fprintf(w, "%v\t%v\n\n", "short url", "original url")
 		    for key, val :=range(res.Result) {
