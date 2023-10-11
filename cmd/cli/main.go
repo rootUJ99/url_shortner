@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
+    /* "io" */
 	"log"
 	"net/http"
 	"os"
@@ -26,27 +26,24 @@ type ResResult struct {
 //     http.MethodPost | http.MethodGet
 // }
 
-func callApi[K comparable, V any](method string, url string, body map[K]V)  {
+
+func callApi[K comparable, V any](method string, url string, body map[K]V, decoder interface{}) interface{} {
     jBody, err := json.Marshal(body)
     req, err := http.NewRequest(method, url, bytes.NewBuffer(jBody)) 
     if err != nil {
 	log.Panic("Failed to get response")
     } 
-    client := &http.Client{}
-    resp, err := client.Do(req)
+    res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Println("Errored when sending request to the server")
 	}
 
-    defer resp.Body.Close()
-    print(resp.Body)
-    // body, err =io.ReadAll(resp.Body)
+    defer res.Body.Close()
+ //    resBody, err :=io.ReadAll(res.Body)
  //    if err != nil {
 	// log.Panic("can not able to parse body")
  //    }
- //    var resObj ResResult
- //    json.Unmarshal(body, &resObj)
- //    return resObj
+    return json.NewDecoder(res.Body).Decode(decoder)
 }
 
 func CliApp() {
@@ -83,11 +80,15 @@ func CliApp() {
 		Action: func(ctx *pkcli.Context) error {
 		    fmt.Printf("these are the list of urls\n\n")
 		    var body map[string]string
-		    res:=callApi("GET", "http://localhost:6969/api/v2/tiny/all", body)
+		    var res ResResult
+		    err := callApi("GET", "http://localhost:6969/api/v1/tiny/all", body, &res)
+		    if err != nil {
+			fmt.Println(err)
+		    }
 		    w := tabwriter.NewWriter(os.Stdout, 10, 1, 1, ' ', tabwriter.Debug)
-		    fmt.Fprintf(w, "%v\t%v\n\n", "short url", "original url")
+		    fmt.Fprintf(w, "%v\t %v\n\n", "short url", "original url")
 		    for key, val :=range(res.Result) {
-			fmt.Fprintf(w, "%v\t%v\n", key, val)
+			fmt.Fprintf(w, "%v\t %v\n", key, val)
 		    }
 		    w.Flush()
 		    return nil
