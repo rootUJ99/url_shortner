@@ -26,8 +26,22 @@ type ResResult struct {
 //     http.MethodPost | http.MethodGet
 // }
 
+type CreateUrl struct {
+    Url string `json:"url"`
+    Expitry int `json:"expiry"`
+}
 
-func callApi[K comparable, V any](method string, url string, body map[K]V, decoder interface{}) interface{} {
+type UpdateUrl struct {
+    Url string `json:"url"`
+    OldUrl string `json:"oldurl"`
+    Expitry int `json:"expiry"`
+}
+
+type ResMessage struct {
+    Message string `json:"message"`
+}
+
+func callApi(method string, url string, body interface{}, decoder interface{}) interface{} {
     jBody, err := json.Marshal(body)
     req, err := http.NewRequest(method, url, bytes.NewBuffer(jBody)) 
     if err != nil {
@@ -60,7 +74,13 @@ func CliApp() {
 		Aliases: []string{"m"},
 		Usage: "Make a tiny url",
 		Action: func(ctx *pkcli.Context) error {
-		    fmt.Println("this is the url", ctx.Args().First())
+		    body:= CreateUrl{
+			Url: ctx.Args().First(),
+			Expitry: 5,	
+		    }
+		    var res ResMessage 
+		    callApi("POST", "http://localhost:6969/api/v1/tiny", body, &res)
+		    fmt.Println(res.Message)
 		    return nil
 		},
 	    },
@@ -69,7 +89,14 @@ func CliApp() {
 		Aliases: []string{"u"},
 		Usage: "update the url",
 		Action: func(ctx *pkcli.Context) error {
-		    fmt.Println("this is the url", ctx.Args().First())
+		    body:= UpdateUrl{
+			Url: ctx.Args().First(),
+			OldUrl: ctx.Args().Tail()[0],
+			Expitry: 5,	
+		    }
+		    var res ResMessage 
+		    callApi("PUT", "http://localhost:6969/api/v1/tiny", body, &res)
+		    fmt.Println(res.Message)
 		    return nil
 		},
 	    },
