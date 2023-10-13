@@ -15,6 +15,10 @@ type TinyHandlerPostBody struct  {
 	Expiry int `json:"expiry"`
 }
 
+type TinyHandlerDeleteBody struct {
+	Url string `json:"url"`
+}
+
 type TinyHandlerUpdateBody struct  {
 	OldUrl string `json:"oldurl"`
 	Url string `json:"url"`
@@ -101,15 +105,16 @@ func (tCtx TinyCtx) tinyPostHandler(w http.ResponseWriter, r *http.Request) {
 func (tCtx TinyCtx) tinyPutHandler(w http.ResponseWriter, r *http.Request) {
 	var body TinyHandlerUpdateBody 
 	json.NewDecoder(r.Body).Decode(&body)
-	hash:=calculateHash(body.Url)
+	newUrlHash:=calculateHash(body.Url)
+	oldUrlHash:=calculateHash(body.OldUrl)
 	
-	err := tCtx.client.HSet(tCtx.ctx, "urlHash", hash, body.Url).Err()
+	err := tCtx.client.HSet(tCtx.ctx, "urlHash", newUrlHash, body.Url).Err()
 	if err != nil {
 		redisErr(err)
 		return
 	}
 
-	err = tCtx.client.HDel(tCtx.ctx, "urlHash", body.OldUrl).Err()
+	err = tCtx.client.HDel(tCtx.ctx, "urlHash", oldUrlHash).Err()
 	if err != nil {
 		redisErr(err)
 		return
@@ -162,16 +167,19 @@ func (tCtx TinyCtx) tinyGetAllHandler(w http.ResponseWriter, r *http.Request) {
 	sendAsJson(w, response)
 }
 
-func (tCtx TinyCtx) tinyDelHandlerByHash(w http.ResponseWriter, r *http.Request) {
-	hash:=r.URL.Query().Get("hash")
-	result, err :=tCtx.client.HDel(tCtx.ctx, "urlHash", hash).Result()
+func (tCtx TinyCtx) tinyDelHandler(w http.ResponseWriter, r *http.Request) {
+	var body TinyHandlerDeleteBody 
+	json.NewDecoder(r.Body).Decode(&body)
+	urlHash:=calculateHash(body.Url)
+
+	result, err :=tCtx.client.HDel(tCtx.ctx, "urlHash", urlHash).Result()
 	fmt.Println("res", result)
 	if err != nil {
 		redisErr(err)
 		return
 	}
 	if result == 0 {
-		sendErrJson(w, fmt.Sprintf("%v hash does not exist!", hash))
+		sendErrJson(w, fmt.Sprintf("%v hash does not exist!", urlHash))
 		return 
 	}
 
@@ -179,7 +187,7 @@ func (tCtx TinyCtx) tinyDelHandlerByHash(w http.ResponseWriter, r *http.Request)
 		Message string `json:"message"`
 	}
 	response:=res {
-		Message: fmt.Sprintf("%v has been deleted from the record", hash),
+		Message: fmt.Sprintf("%v has been deleted from the record", body.Url),
 	}
 	sendAsJson(w, response)
 }
@@ -210,7 +218,7 @@ func main(){
 
 	r.HandleFunc("/api/v1/tiny/all", tCtx.tinyGetAllHandler).Methods("GET")
 
-	r.HandleFunc("/api/v1/tiny", tCtx.tinyDelHandlerByHash).Methods("DELETE")
+	r.HandleFunc("/api/v1/tiny", tCtx.tinyDelHandler).Methods("DELETE")
 	
 	http.ListenAndServe(":6969",r)
 }

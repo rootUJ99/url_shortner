@@ -16,19 +16,12 @@ type ResResult struct {
     Result map[string]string `json:"result"`
 }
 
-// type ApiModel struct {
-//     url string
-//     method string
-//     body map[]
-// }
-
-// type httpMethods interface {
-//     http.MethodPost | http.MethodGet
-// }
-
 type CreateUrl struct {
     Url string `json:"url"`
     Expitry int `json:"expiry"`
+}
+type DeleteUrl struct {
+    Url string `json:"url"`
 }
 
 type UpdateUrl struct {
@@ -40,6 +33,8 @@ type UpdateUrl struct {
 type ResMessage struct {
     Message string `json:"message"`
 }
+
+const host string = "http://localhost:6969"
 
 func callApi(method string, url string, body interface{}, decoder interface{}) interface{} {
     jBody, err := json.Marshal(body)
@@ -70,16 +65,17 @@ func CliApp() {
 	},
 	Commands: []*pkcli.Command{
 	    {
-		Name: "make",
-		Aliases: []string{"m"},
-		Usage: "Make a tiny url",
+		Name: "create",
+		Aliases: []string{"c"},
+		Usage: "create a new tiny url",
 		Action: func(ctx *pkcli.Context) error {
 		    body:= CreateUrl{
 			Url: ctx.Args().First(),
 			Expitry: 5,	
 		    }
 		    var res ResMessage 
-		    callApi("POST", "http://localhost:6969/api/v1/tiny", body, &res)
+		    endPoint:= fmt.Sprintf("%v/api/v1/tiny", host)
+		    callApi("POST", endPoint, body, &res)
 		    fmt.Println(res.Message)
 		    return nil
 		},
@@ -87,15 +83,32 @@ func CliApp() {
 	    {
 		Name: "update",
 		Aliases: []string{"u"},
-		Usage: "update the url",
+		Usage: "update the existing tiny url",
 		Action: func(ctx *pkcli.Context) error {
 		    body:= UpdateUrl{
-			Url: ctx.Args().First(),
-			OldUrl: ctx.Args().Tail()[0],
+			OldUrl: ctx.Args().First(),
+			Url: ctx.Args().Tail()[0],
 			Expitry: 5,	
 		    }
+		    fmt.Println(body)
 		    var res ResMessage 
-		    callApi("PUT", "http://localhost:6969/api/v1/tiny", body, &res)
+		    endPoint:= fmt.Sprintf("%v/api/v1/tiny", host)
+		    callApi("PUT", endPoint, body, &res)
+		    fmt.Println(res.Message)
+		    return nil
+		},
+	    },
+	    {
+		Name: "delete",
+		Aliases: []string{"d"},
+		Usage: "delete an existing tiny url",
+		Action: func(ctx *pkcli.Context) error {
+		    body:= DeleteUrl{
+			Url: ctx.Args().First(),
+		    }
+		    var res ResMessage 
+		    endPoint:= fmt.Sprintf("%v/api/v1/tiny", host)
+		    callApi("DELETE", endPoint, body, &res)
 		    fmt.Println(res.Message)
 		    return nil
 		},
@@ -108,14 +121,16 @@ func CliApp() {
 		    fmt.Printf("these are the list of urls\n\n")
 		    var body map[string]string
 		    var res ResResult
-		    err := callApi("GET", "http://localhost:6969/api/v1/tiny/all", body, &res)
+		    endPoint:= fmt.Sprintf("%v/api/v1/tiny/all", host)
+		    err := callApi("GET", endPoint, body, &res)
 		    if err != nil {
 			fmt.Println(err)
 		    }
 		    w := tabwriter.NewWriter(os.Stdout, 10, 1, 1, ' ', tabwriter.Debug)
 		    fmt.Fprintf(w, "%v\t %v\n\n", "short url", "original url")
 		    for key, val :=range(res.Result) {
-			fmt.Fprintf(w, "%v\t %v\n", key, val)
+			urlWithHost := fmt.Sprintf("%v/%v", host, key)
+			fmt.Fprintf(w, "%v\t %v\n", urlWithHost, val)
 		    }
 		    w.Flush()
 		    return nil
